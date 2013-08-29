@@ -16,7 +16,12 @@ class Request{
 
 	protected function init(){
 		$this->cookie = $_COOKIE;
-		$this->cookieString = $_SERVER['HTTP_COOKIE'];
+
+        // 取决于浏览器是否发出该头部
+		$this->cookieString = isset($_SERVER['HTTP_COOKIE'])
+            ? $_SERVER['HTTP_COOKIE']
+            : '';
+
 		$this->_getRequestParams();
 		$this->_getRequestData();
 		
