@@ -15,6 +15,8 @@ class Request{
 	}
 
 	protected function init(){
+        $this->bNoTemplate = false;
+
 		$this->cookie = $_COOKIE;
 
         // 取决于浏览器是否发出该头部
@@ -63,6 +65,14 @@ class Request{
 		return $this->getLogicParam($key);
 	}
 
+    public function isNoTemplate(){
+        return $this->bNoTemplate;
+    }
+
+    public function enableNoTemplate(){
+        $this->bNoTemplate = true;
+    }
+
 	public function setLogicParam($key, $value){
 		if(!isset($this->logicParams[$key])){
 			$this->logicParams[$key] = $value;
@@ -89,8 +99,11 @@ class Request{
 	}
 
 	private function _getRequestParams(){
+        /*
 		$queryString = $_SERVER['QUERY_STRING'];
 		$this->requestParams = self::query2Array($queryString);
+        */
+		$this->requestParams = $_GET;
 	}
 
 	private function _getRequestData(){

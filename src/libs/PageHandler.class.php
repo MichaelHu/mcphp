@@ -13,11 +13,14 @@ class PageHandler implements Handler{
 		$this->response = $response;
 
 		$this->iniConfig = array();
-		$configPath = dirname(TemplateProvider::getTN($request));
-		$configFile = $configPath . '/config.ini';
-		if(file_exists($configFile)){
-			$this->iniConfig = parse_ini_file($configFile, true);
-		}
+
+        if($this->request->isNoTemplate()){
+            $configPath = dirname(TemplateProvider::getTN($request));
+            $configFile = $configPath . '/config.ini';
+            if(file_exists($configFile)){
+                $this->iniConfig = parse_ini_file($configFile, true);
+            }
+        }
 
 		$this->commonIniConfig = array();
 		$commonConfigFile
@@ -33,11 +36,16 @@ class PageHandler implements Handler{
 	}
 
 	public function process(){
-		$this->prepareCommonData();
-		$this->prepareData();
+        $this->prepareData();
 
-		$this->flushPageData();
-		$this->showPage();
+        if(!$this->request->isNoTemplate()){
+            $this->prepareCommonData();
+
+            $this->flushPageData();
+            $this->showPage();
+        }
+
+		$this->response->flush();
 	}
 
 	protected function flushPageData(){
@@ -66,8 +74,9 @@ class PageHandler implements Handler{
 	}
 
 	protected function showPage(){
-		$this->response->appendContent(TemplateProvider::fetch($this->request));
-		$this->response->flush();
+        $this->response->appendContent(
+            TemplateProvider::fetch($this->request)
+        );
 	}
 }
 
