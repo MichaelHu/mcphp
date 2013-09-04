@@ -115,46 +115,45 @@ class Request{
 	}
 
 	private function _getLogicParams(){
-		$this->logicParams = array();
 		$config = $this->logicParamsConfig;
 		foreach($config as $k => $v){
-			$this->logicParams[$k] 
-				= $this->_getParamFromSpecifiedSource($k, $v['source']);
-		}
-		$this->_validate();
-	}
-
-	// 验证逻辑参数的正确性
-	protected function _validate(){
-		$params = $this->logicParams;
-		foreach($params as $k => $v){
-			if(!isset($v)){
-				continue;
-			}
-
-			if(array_key_exists($k, $this->logicParamsConfig)){
-				$pattern = $this->logicParamsConfig[$k]['pattern'];	
-				if(!isset($pattern) || !is_string($pattern) || null === $pattern){
-					continue;
-				}
-				$rslt = preg_match($pattern, $v);
-				if(false === $rslt){
-					// match error
-				}
-
-				if(0 === $rslt){
-					// no match
-					$this->logicParams[$k] = $this->logicParamsConfig[$k]['default'];
-				}
-			}
+            // tn-level logicparams
+            if(preg_match('/tn:(.+)/', $k, $matches)){
+                if($this->logicParams['tn'] == $matches[1]){
+                    foreach($v as $k1 => $v1){
+                        $this->logicParams[$k1] 
+                            = $this->_getParamFromSpecifiedSource($k1, $v1);
+                    }
+                }
+            }
+            // common logicparams
+            else{
+                $this->logicParams[$k] 
+                    = $this->_getParamFromSpecifiedSource($k, $v);
+            }
 		}
 	}
 
-	private function _getParamFromSpecifiedSource($name, $source){
+	private function _getParamFromSpecifiedSource($name, $config){
+
+        if(isset($config) && isset($config['source'])){
+            $source = $config['source'];
+        }
+        else{
+            return false;
+        }
+
+        // 默认值
+        $default = false;
+        if(isset($config['default'])){
+            $default = $config['default'];
+        }
+
+
 		$hashes = explode('|', $source);
-
 		// 先从Request对象中获取
 		$params = $this->$hashes[0];
+
 
 		if(isset($params)){
 			for($i=1; $i<count($hashes); $i++){
@@ -166,19 +165,47 @@ class Request{
 					break;
 				}
 			}
-			if(isset($params)){
-				return $params;
-			}
-		}
-	
-		// 否则从配置文件中获取默认值
-		$params = $this->logicParamsConfig;
-		if(isset($params) && isset($params[$name])
-			&& isset($params[$name]['default'])){
-			return $params[$name]['default'];
-		}
 
-		return false;
+            // 取到值
+			if(isset($params)){
+                // 有匹配模式则进行验证
+                if(isset($config['pattern'])){
+                    $pattern = $config['pattern'];
+                    if(is_string($pattern)){
+                        $rslt = preg_match($pattern, $params);
+                        // 验证通过
+                        if($rslt){
+                            return $params;
+                        }
+
+                        // 验证未通过
+                        if(false === $rslt){
+                            // match error
+                        }
+
+                        if(0 === $rslt){
+                            // no match
+                        }
+
+                    }
+
+                }
+                // 无匹配模式，直接返回获取到的值
+                else{
+                    return $params;
+                }
+			}
+            // 未取到值
+            else{
+                // @todo:
+            }
+
+		}
+        else{
+            // @todo: 
+        }
+	
+		return $default;
 	}
 
 	private static function query2Array($query){
